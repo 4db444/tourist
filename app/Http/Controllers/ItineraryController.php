@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Itinerary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Category;
 
 class ItineraryController extends Controller
 {
@@ -18,16 +19,22 @@ class ItineraryController extends Controller
         $validated = $request->validate([
             "title" => "required",
             "duration" => "required|numeric|min:1",
-            "image" => "required|url"
+            "image" => "required|url",
+            "categories" => "nullable|array",
+            "categories.*" => "string|exists:categories,name"
         ]);
 
         $user = Auth::user();
 
         $itinerary = $user->itineraries()->create($validated);
 
+        foreach($validated["categories"] as $category){
+            $itinerary->categories()->attach(Category::where("name", $category)->first());
+        }
+
         return response()->json([
             "message" => "the recored has been created",
-            "itinerary" => $itinerary
+            "itinerary" => $itinerary->load("categories")
         ]);
     }
 
